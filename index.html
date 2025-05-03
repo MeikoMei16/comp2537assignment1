@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>COMP2537 Assignment 1</title>
+  <link rel="icon" type="image/svg+xml" href="/javascript.svg">
+</head>
+<body>
+<header class="bg-dark text-white text-center py-4">
+  <h1>Login</h1>
+</header>
+<main class="container my-4">
+  <div class="row justify-content-center">
+    <!-- Login Form -->
+    <div class="col-md-4">
+      <form id="loginForm" class="p-3">
+        <div class="mb-3">
+          <label for="username" class="form-label">Username</label>
+          <input type="text" id="username" name="username" class="form-control" required>
+        </div>
+        <div class="mb-3">
+          <label for="password" class="form-label">Password</label>
+          <input type="password" id="password" name="password" class="form-control" required>
+        </div>
+        <button type="submit" class="btn btn-primary w-100">Login</button>
+        <div id="errorMessage" class="error-message mt-2" aria-live="polite"></div>
+      </form>
+    </div>
+  </div>
+  <div class="row justify-content-center mt-4">
+    <!-- Create Account Form -->
+    <div class="col-md-4">
+      <form id="createForm" class="p-3">
+        <div class="mb-3">
+          <label for="createUsername" class="form-label">Username</label>
+          <input type="text" id="createUsername" name="createUsername" class="form-control" required>
+        </div>
+        <div class="mb-3">
+          <label for="createFirstName" class="form-label">First Name</label>
+          <input type="text" id="createFirstName" name="createFirstName" class="form-control" required>
+        </div>
+        <div class="mb-3">
+          <label for="createLastName" class="form-label">Last Name</label>
+          <input type="text" id="createLastName" name="createLastName" class="form-control" required>
+        </div>
+        <div class="mb-3">
+          <label for="createEmail" class="form-label">Email</label>
+          <input type="email" id="createEmail" name="createEmail" class="form-control" required>
+        </div>
+        <div class="mb-3">
+          <label for="createPassword" class="form-label">Password</label>
+          <input type="password" id="createPassword" name="createPassword" class="form-control" required>
+        </div>
+        <button type="submit" class="btn btn-success w-100">Create Account</button>
+        <div id="createMessage" class="success-message mt-2" aria-live="polite"></div>
+      </form>
+    </div>
+  </div>
+</main>
+<script type="module" src="/src/client.js"></script>
+</body>
+</html>

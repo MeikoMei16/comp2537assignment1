@@ -1,0 +1,14 @@
+{
+  "paradigms": [
+    {"name": "Functional", "type": "Declarative", "keyFeature": "Pure Functions", "exampleLanguage": "Haskell", "useCase": "Data Processing"},
+    {"name": "Concurrent", "type": "Parallel", "keyFeature": "Thread Safety", "exampleLanguage": "Erlang", "useCase": "Real-time Apps"},
+    {"name": "Imperative", "type": "Procedural", "keyFeature": "State Changes", "exampleLanguage": "C", "useCase": "System Programming"},
+    {"name": "Object-Oriented", "type": "Encapsulation", "keyFeature": "Inheritance", "exampleLanguage": "Java", "useCase": "Large Systems"},
+    {"name": "Logic", "type": "Declarative", "keyFeature": "Rule-Based", "exampleLanguage": "Prolog", "useCase": "AI Systems"},
+    {"name": "Event-Driven", "type": "Reactive", "keyFeature": "Callbacks", "exampleLanguage": "JavaScript", "useCase": "UI Development"},
+    {"name": "Aspect-Oriented", "type": "Modular", "keyFeature": "Cross-Cutting", "exampleLanguage": "AspectJ", "useCase": "Logging"},
+    {"name": "Reactive", "type": "Async", "keyFeature": "Data Streams", "exampleLanguage": "RxJS", "useCase": "Real-time UI"},
+    {"name": "Structured", "type": "Procedural", "keyFeature": "Control Flow", "exampleLanguage": "Pascal", "useCase": "Education"},
+    {"name": "Parallel", "type": "Concurrent", "keyFeature": "Multi-Core", "exampleLanguage": "Go", "useCase": "High Performance"}
+  ]
+}
