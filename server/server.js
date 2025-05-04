@@ -85,15 +85,18 @@ const allowedOrigins = [
 
 app.use(
     cors({
-      origin: (origin, callback) => {
-        console.log('CORS check - Origin:', origin, 'Allowed:', allowedOrigins);
+      origin: function (origin, callback) {
+        const allowedOrigins = [
+          'http://localhost:5173',
+          'https://comp2537assignment1-jx73.onrender.com',
+        ];
         if (!origin || allowedOrigins.includes(origin)) {
-          callback(null, true);
+          callback(null, origin); // Respond with the request's origin
         } else {
           callback(new Error('Not allowed by CORS'));
         }
       },
-      credentials: true, // REQUIRED to allow cookies
+      credentials: true, // Necessary to include cookies in browser
       methods: ['GET', 'POST', 'OPTIONS'],
       allowedHeaders: ['Content-Type'],
     })
