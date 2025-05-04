@@ -93,7 +93,16 @@ document.addEventListener('DOMContentLoaded', () => {
               errorMessage.textContent = 'Session verification failed. Please try again.';
               errorMessage.style.display = 'block';
             }
+          } else {
+            errorMessage.textContent = result.message || 'Invalid username or password';
+            errorMessage.style.display = 'block';
           }
+        } catch (error) {
+          errorMessage.textContent = 'An error occurred during login. Please try again.';
+          errorMessage.style.display = 'block';
+        }
+      });
+    }
 
     if (createForm) {
       createForm.addEventListener('submit', async (e) => {
