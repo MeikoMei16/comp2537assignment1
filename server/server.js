@@ -63,7 +63,7 @@ const isAuthenticated = (req, res, next) => {
 // Updated CORS configuration to allow deployed frontend or local development
   const allowedOrigins = [
     'http://localhost:5173', // Local development
-    process.env.FRONTEND_URL, // Add your deployed frontend URL in Render environment variables
+    process.env.FRONTEND_URL || 'https://comp2537assignment1-syhl.onrender.com',
   ].filter(Boolean); // Remove undefined values
 
   app.use(
@@ -77,10 +77,12 @@ const isAuthenticated = (req, res, next) => {
           }
         },
         credentials: true,
-        methods: ['GET', 'POST'],
+        methods: ['GET', 'POST', 'OPTIONS'],
         allowedHeaders: ['Content-Type'],
       })
   );
+
+  app.options('*', cors());
 
   app.use(express.json());
   app.use(cookieParser());
