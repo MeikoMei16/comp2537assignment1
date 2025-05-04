@@ -86,8 +86,7 @@ const allowedOrigins = [
 app.use(
     cors({
       origin: (origin, callback) => {
-        const allowed = ['https://comp2537assignment1-jx73.onrender.com'];
-        if (!origin || allowed.includes(origin)) callback(null, origin);
+        if (!origin || allowedOrigins.includes(origin)) callback(null, origin);
         else callback(new Error('Blocked by CORS'));
       },
       credentials: true
@@ -98,6 +97,9 @@ app.options('*', cors());
 
 app.use(express.json());
 app.use(cookieParser());
+app.set('trust proxy', 1); // Trust first proxy (Render, Heroku, etc.)
+
+
 
 // Session configuration
 const sessionStore = MongoStore.create({
