@@ -86,14 +86,19 @@ const isAuthenticated = (req, res, next) => {
 
   app.use(express.json());
   app.use(cookieParser());
+  const sessionStore = MongoStore.create({
+    mongoUrl: process.env.MONGO_URI,
+    collectionName: 'sessions',
+  });
+  sessionStore.on('error', (error) => {
+    console.error('Session store error:', error);
+  });
+
   app.use(session({
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
-    store: MongoStore.create({
-      mongoUrl: process.env.MONGO_URI,
-      collectionName: 'sessions',
-    }),
+    store: sessionStore,
     cookie: {
       secure: process.env.NODE_ENV === 'production',
       httpOnly: true,
@@ -123,22 +128,42 @@ const isAuthenticated = (req, res, next) => {
 
   // Login Endpoint
   app.post('/api/login', async (req, res) => {
+    console.log('Received POST /api/login:', req.body);
     const { username, password } = req.body;
     if (!username || !password) {
+      console.log('Missing username or password');
       return res.status(400).json({ message: 'Username and password are required' });
     }
     try {
+      console.log('Querying user:', username);
       const user = await User.findOne({ user_name: username });
+      console.log('User lookup result:', user ? 'Found' : 'Not found');
       if (user && await bcrypt.compare(password, user.password)) {
+        console.log('Password matched, setting session for:', username);
         req.session.user = { username: user.user_name, ID: user._id.toString() };
-        res.status(200).json({ message: 'Login successful', redirect: '/dashboard.html' });
+        // Ensure session is saved before sending response
+        req.session.save((err) => {
+          if (err) {
+            console.error('Session save error:', err);
+            return res.status(500).json({ message: 'Failed to save session' });
+          }
+          console.log('Session saved, sending 200 response for:', username);
+          res.status(200).json({ message: 'Login successful', redirect: '/dashboard.html' });
+        });
       } else {
+        console.log('Invalid credentials for:', username);
         res.status(401).json({ message: 'Invalid username or password' });
       }
     } catch (error) {
-      console.error('Database error:', error);
+      console.error('Error in /api/login:', error.message);
       res.status(500).json({ message: 'Server error during login' });
     }
+  });
+
+// Catch-all error middleware
+  app.use((err, req, res, next) => {
+    console.error('Unhandled server error:', err.message);
+    res.status(500).json({ message: 'Internal server error' });
   });
 
   // Create Account Endpoint
@@ -236,7 +261,10 @@ const isAuthenticated = (req, res, next) => {
     res.status(404).sendFile(join(__dirname, 'dist', '404.html'));
   });
 
+
+
   app.listen(port,"0.0.0.0", () => {
     console.log(`Server running at http://localhost:${port}`);
   });
 })();
+
