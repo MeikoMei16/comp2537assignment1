@@ -74,7 +74,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
           if (response.ok) {
             console.log('Login successful:', result);
-            window.location.href = result.redirect || '/dashboard.html';
+
+            // Slight delay to allow the browser to store the session cookie
+            setTimeout(() => {
+              window.location.href = result.redirect || '/dashboard.html';
+            }, 100); // 100ms is often enough
           } else {
             errorMessage.textContent = result.message || 'Invalid username or password';
             errorMessage.style.display = 'block';
