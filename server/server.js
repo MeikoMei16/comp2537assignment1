@@ -85,20 +85,12 @@ const allowedOrigins = [
 
 app.use(
     cors({
-      origin: function (origin, callback) {
-        const allowedOrigins = [
-          'http://localhost:5173',
-          'https://comp2537assignment1-jx73.onrender.com',
-        ];
-        if (!origin || allowedOrigins.includes(origin)) {
-          callback(null, origin); // Respond with the request's origin
-        } else {
-          callback(new Error('Not allowed by CORS'));
-        }
+      origin: (origin, callback) => {
+        const allowed = ['https://comp2537assignment1-jx73.onrender.com'];
+        if (!origin || allowed.includes(origin)) callback(null, origin);
+        else callback(new Error('Blocked by CORS'));
       },
-      credentials: true, // Necessary to include cookies in browser
-      methods: ['GET', 'POST', 'OPTIONS'],
-      allowedHeaders: ['Content-Type'],
+      credentials: true
     })
 );
 
@@ -123,10 +115,10 @@ app.use(
       saveUninitialized: false,
       store: sessionStore,
       cookie: {
-        secure: process.env.NODE_ENV === 'production',
+        secure: true,
         httpOnly: true,
         maxAge: 60 * 60 * 1000,
-        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+        sameSite: 'none',
       },
     })
 );
