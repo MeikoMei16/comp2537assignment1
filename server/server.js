@@ -54,7 +54,7 @@ const postSchema = new mongoose.Schema({
 const Post = mongoose.model('Post', postSchema);
 
 const isAuthenticated = (req, res, next) => {
-  console.log('Checking authentication for:', req.url);
+  console.log('Checking authentication for:', req.url, 'Session user:', req.session.user);
   if (req.session.user) {
     next();
   } else {
@@ -120,18 +120,20 @@ app.use(
       saveUninitialized: false,
       store: sessionStore,
       cookie: {
-        secure: process.env.NODE_ENV === 'production',
+        secure: process.env.NODE_ENV === 'production' ? true : false,
         httpOnly: true,
         maxAge: 60 * 60 * 1000,
+        sameSite: 'lax',
+        domain: process.env.NODE_ENV === 'production' ? 'comp2537assignment1-jx73.onrender.com' : 'localhost',
       },
     })
 );
 
-// Log response completion
+// Log response completion and cookies
 app.use((req, res, next) => {
   const originalEnd = res.end;
   res.end = function (...args) {
-    console.log(`Response sent for ${req.method} ${req.url}: Status ${res.statusCode}`);
+    console.log(`Response sent for ${req.method} ${req.url}: Status ${res.statusCode}, Cookies:`, res.get('Set-Cookie'));
     return originalEnd.apply(this, args);
   };
   next();
@@ -140,11 +142,6 @@ app.use((req, res, next) => {
 // Serve static files
 console.log('Serving static files from:', distPath);
 app.use(express.static(distPath));
-
-// Serve pictures for dashboard GIFs
-const picturesPath = join(projectRoot, 'pictures');
-console.log('Serving pictures from:', picturesPath);
-app.use('/pictures', express.static(picturesPath));
 
 // Debug endpoint to list dist files
 app.get('/api/debug-files', (req, res) => {
@@ -196,11 +193,22 @@ app.post('/api/login', async (req, res) => {
   }
   try {
     console.log('Querying user:', username);
-    const user = await User.findOne({ user_name: username });
+    const user = await User.findOne({ user_name: { $regex: new RegExp(`^${username}$`, 'i') } });
     console.log('User lookup result:', user ? 'Found' : 'Not found');
     if (user && await bcrypt.compare(password, user.password)) {
       console.log('Password matched, setting session for:', username);
       req.session.user = { username: user.user_name, ID: user._id.toString() };
+      await new Promise((resolve, reject) => {
+        req.session.save((err) => {
+          if (err) {
+            console.error('Session save error:', err);
+            reject(err);
+          } else {
+            console.log('Session saved successfully');
+            resolve();
+          }
+        });
+      });
       console.log('Sending 200 response for:', username);
       res.status(200).json({ message: 'Login successful', redirect: '/dashboard.html' });
       res.end();

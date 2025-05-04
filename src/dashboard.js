@@ -13,8 +13,14 @@ const makeApiRequest = async (url, options) => {
       },
       credentials: 'include',
     });
-    console.log('API response status:', response.status);
-    const result = await response.json();
+    console.log('API response status:', response.status, 'Headers:', response.headers.get('Set-Cookie'));
+    const contentType = response.headers.get('content-type');
+    let result;
+    if (contentType && contentType.includes('application/json')) {
+      result = await response.json();
+    } else {
+      result = { message: await response.text() || 'Unknown error' };
+    }
     return { response, result };
   } catch (error) {
     console.error(`API request failed for ${url}:`, error);
@@ -38,25 +44,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     const currentPath = window.location.pathname;
     console.log('Current path:', currentPath);
 
-    // Normalize path and define valid routes
     const normalizedPath = currentPath.endsWith('/') ? currentPath.slice(0, -1) : currentPath;
     const validRoutes = ['/index.html', '/dashboard.html', '/404.html', '', '/'];
 
-    // Redirect invalid routes to 404
     if (!validRoutes.includes(normalizedPath)) {
       console.log('Redirecting to 404.html for invalid path:', normalizedPath);
       window.location.href = '/404.html';
       return;
     }
 
-    // Redirect root routes to /index.html
     if (normalizedPath === '' || normalizedPath === '/') {
       console.log('Redirecting root path to /index.html');
       window.location.href = '/index.html';
       return;
     }
 
-    // Handle dashboard.html logic
     if (normalizedPath === '/dashboard.html') {
       try {
         const { response, result } = await makeApiRequest('/api/check-session', {
@@ -69,7 +71,6 @@ document.addEventListener('DOMContentLoaded', async () => {
           return;
         }
 
-        // Update welcome message
         const welcomeMessage = document.getElementById('welcomeMessage');
         if (welcomeMessage) {
           welcomeMessage.textContent = `Welcome, ${result.username}!`;
@@ -77,7 +78,6 @@ document.addEventListener('DOMContentLoaded', async () => {
           console.error('welcomeMessage not found');
         }
 
-        // Random GIF selection
         const gifPaths = ['/pictures/pepe.gif', '/pictures/theresa.gif', '/pictures/viro.gif'];
         const randomIndex = Math.floor(Math.random() * gifPaths.length);
         const gifImage = document.getElementById('gifImage');
@@ -87,7 +87,6 @@ document.addEventListener('DOMContentLoaded', async () => {
           console.error('gifImage not found');
         }
 
-        // Initialize DOM elements
         const signoutBtn = document.getElementById('signoutBtn');
         const errorMessage = document.getElementById('errorMessage');
         const successMessage = document.getElementById('successMessage');
@@ -97,7 +96,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!signoutBtn) console.error('signoutBtn not found');
         if (!createPostForm) console.error('createPostForm not found');
 
-        // Signout button handler
         if (signoutBtn) {
           signoutBtn.addEventListener('click', async () => {
             console.log('Signout button clicked');
@@ -119,7 +117,6 @@ document.addEventListener('DOMContentLoaded', async () => {
           });
         }
 
-        // Create post form submission
         if (createPostForm) {
           createPostForm.addEventListener('submit', async (e) => {
             e.preventDefault();

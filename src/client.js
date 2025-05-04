@@ -13,8 +13,14 @@ const makeApiRequest = async (url, options) => {
       },
       credentials: 'include',
     });
-    console.log('API response status:', response.status);
-    const result = await response.json();
+    console.log('API response status:', response.status, 'Headers:', response.headers.get('Set-Cookie'));
+    let result;
+    const contentType = response.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+      result = await response.json();
+    } else {
+      result = { message: await response.text() || 'Unknown error' };
+    }
     return { response, result };
   } catch (error) {
     console.error(`API request failed for ${url}:`, error);
@@ -28,7 +34,7 @@ const resetMessages = (elements) => {
     if (el) {
       el.textContent = '';
       el.style.display = 'none';
-      el.style.color = ''; // Reset color for success messages
+      el.style.color = '';
     }
   });
 };
@@ -45,7 +51,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!loginForm) console.error('loginForm not found');
     if (!createForm) console.error('createForm not found');
 
-    // Login Form Submission
     if (loginForm) {
       loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -71,17 +76,16 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log('Login successful:', result);
             window.location.href = result.redirect || '/dashboard.html';
           } else {
-            errorMessage.textContent = result.message || 'Login failed';
+            errorMessage.textContent = result.message || 'Invalid username or password';
             errorMessage.style.display = 'block';
           }
         } catch (error) {
-          errorMessage.textContent = 'An error occurred. Please try again.';
+          errorMessage.textContent = 'An error occurred during login. Please try again.';
           errorMessage.style.display = 'block';
         }
       });
     }
 
-    // Create Account Form Submission
     if (createForm) {
       createForm.addEventListener('submit', async (e) => {
         e.preventDefault();
