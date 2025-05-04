@@ -18,7 +18,8 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: resolve(__dirname, 'index.html'),
-        dashboard: resolve(__dirname, 'dashboard.html')
+        dashboard: resolve(__dirname, 'dashboard.html'),
+        errorpage:resolve(__dirname, '404.html')
       }
     }
   }

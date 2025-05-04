@@ -80,7 +80,7 @@ const isAuthenticated = (req, res, next) => {
     cookie: {
       secure: false,
       httpOnly: true,
-      maxAge: 24 * 60 * 60 * 1000,
+      maxAge: 60 * 60,
     },
   }));
 
@@ -194,14 +194,31 @@ const isAuthenticated = (req, res, next) => {
     });
   });
 
+
+
+  app.use(express.static(join(__dirname, 'dist')));
+
+
+
   // Serve dashboard.html on port 3000 with protection
+  app.get('', (req, res) => {
+    res.sendFile(join(__dirname, 'dist', 'index'));
+  });
+  app.get('/',  (req, res) => {
+    res.sendFile(join(__dirname, 'dist', 'index'));
+  });
+
   app.get('/dashboard.html', isAuthenticated, (req, res) => {
-    res.sendFile(join(__dirname, 'dashboard.html'));
+    res.sendFile(join(__dirname, 'dist', 'dashboard.html'));
   });
 
   // Serve index.html on port 3000
   app.get('/index.html', (req, res) => {
-    res.sendFile(join(__dirname, 'index.html'));
+    res.sendFile(join(__dirname, 'dist', 'index.html'));
+  });
+
+  app.get('*', (req, res) => {
+    res.status(404).sendFile(join(__dirname, 'dist', '404.html'));
   });
 
   app.listen(port, () => {
