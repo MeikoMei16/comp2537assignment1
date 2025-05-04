@@ -11,7 +11,7 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
 const app = express();
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 10000;
 
 if (!process.env.SESSION_SECRET) throw new Error('SESSION_SECRET not set in .env');
 if (!process.env.MONGO_URI) throw new Error('MONGO_URI not set in .env');
@@ -60,12 +60,27 @@ const isAuthenticated = (req, res, next) => {
 (async () => {
   await initializeDatabase();
 
-  app.use(cors({
-    origin: 'http://localhost:5173',
-    credentials: true,
-    methods: ['GET', 'POST'],
-    allowedHeaders: ['Content-Type'],
-  }));
+// Updated CORS configuration to allow deployed frontend or local development
+  const allowedOrigins = [
+    'http://localhost:5173', // Local development
+    process.env.FRONTEND_URL, // Add your deployed frontend URL in Render environment variables
+  ].filter(Boolean); // Remove undefined values
+
+  app.use(
+      cors({
+        origin: (origin, callback) => {
+          // Allow requests with no origin (e.g., mobile apps or curl) or allowed origins
+          if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+          } else {
+            callback(new Error('Not allowed by CORS'));
+          }
+        },
+        credentials: true,
+        methods: ['GET', 'POST'],
+        allowedHeaders: ['Content-Type'],
+      })
+  );
 
   app.use(express.json());
   app.use(cookieParser());
@@ -78,9 +93,9 @@ const isAuthenticated = (req, res, next) => {
       collectionName: 'sessions',
     }),
     cookie: {
-      secure: false,
+      secure: process.env.NODE_ENV === 'production',
       httpOnly: true,
-      maxAge: 60 * 60,
+      maxAge: 60 * 60 * 1000,
     },
   }));
 
@@ -200,19 +215,17 @@ const isAuthenticated = (req, res, next) => {
 
 
 
-  // Serve dashboard.html on port 3000 with protection
   app.get('', (req, res) => {
-    res.sendFile(join(__dirname, 'dist', 'index'));
+    res.sendFile(join(__dirname, 'dist', 'index.html'));
   });
   app.get('/',  (req, res) => {
-    res.sendFile(join(__dirname, 'dist', 'index'));
+    res.sendFile(join(__dirname, 'dist', 'index.html'));
   });
 
   app.get('/dashboard.html', isAuthenticated, (req, res) => {
     res.sendFile(join(__dirname, 'dist', 'dashboard.html'));
   });
 
-  // Serve index.html on port 3000
   app.get('/index.html', (req, res) => {
     res.sendFile(join(__dirname, 'dist', 'index.html'));
   });
@@ -221,7 +234,7 @@ const isAuthenticated = (req, res, next) => {
     res.status(404).sendFile(join(__dirname, 'dist', '404.html'));
   });
 
-  app.listen(port, () => {
+  app.listen(port,"0.0.0.0", () => {
     console.log(`Server running at http://localhost:${port}`);
   });
 })();
