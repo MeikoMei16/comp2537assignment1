@@ -93,7 +93,7 @@ app.use(
           callback(new Error('Not allowed by CORS'));
         }
       },
-      credentials: true,
+      credentials: true, // REQUIRED to allow cookies
       methods: ['GET', 'POST', 'OPTIONS'],
       allowedHeaders: ['Content-Type'],
     })
@@ -120,11 +120,10 @@ app.use(
       saveUninitialized: false,
       store: sessionStore,
       cookie: {
-        secure: process.env.NODE_ENV === 'production' ? true : false,
+        secure: process.env.NODE_ENV === 'production',
         httpOnly: true,
         maxAge: 60 * 60 * 1000,
-        sameSite: 'lax',
-        domain: process.env.NODE_ENV === 'production' ? 'comp2537assignment1-jx73.onrender.com' : 'localhost',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
       },
     })
 );
