@@ -1,7 +1,7 @@
 {
-  "name": "assignment06",
+  "name": "comp2537assignment01",
   "version": "1.0.0",
-  "description": "comp1537",
+  "description": "comp2537",
   "type": "module",
   "scripts": {
     "dev": "vite",
