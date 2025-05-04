@@ -3,8 +3,9 @@ import './client.css';
 
 // Utility function for making API requests
 const makeApiRequest = async (url, options) => {
+  console.log('Making API request to:', url);
   try {
-    const response = await fetch(`${import.meta.env.VITE_API_URL}${url}`, {
+    const response = await fetch(url, {
       ...options,
       headers: {
         'Content-Type': 'application/json',
@@ -12,6 +13,7 @@ const makeApiRequest = async (url, options) => {
       },
       credentials: 'include',
     });
+    console.log('API response status:', response.status);
     const result = await response.json();
     return { response, result };
   } catch (error) {
@@ -32,85 +34,96 @@ const resetMessages = (elements) => {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
-  const loginForm = document.getElementById('loginForm');
-  const createForm = document.getElementById('createForm');
-  const errorMessage = document.getElementById('errorMessage');
-  const createMessage = document.getElementById('createMessage');
+  console.log('client.js: DOMContentLoaded');
+  try {
+    const loginForm = document.getElementById('loginForm');
+    const createForm = document.getElementById('createForm');
+    const errorMessage = document.getElementById('errorMessage');
+    const createMessage = document.getElementById('createMessage');
+    console.log('Elements found:', { loginForm, createForm, errorMessage, createMessage });
 
-  // Login Form Submission
-  if (loginForm) {
-    loginForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      resetMessages([errorMessage, createMessage]);
+    if (!loginForm) console.error('loginForm not found');
+    if (!createForm) console.error('createForm not found');
 
-      const username = document.getElementById('username')?.value;
-      const password = document.getElementById('password')?.value;
+    // Login Form Submission
+    if (loginForm) {
+      loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        console.log('Login form submitted');
+        resetMessages([errorMessage, createMessage]);
 
-      if (!username || !password) {
-        errorMessage.textContent = 'Username and password are required';
-        errorMessage.style.display = 'block';
-        return;
-      }
+        const username = document.getElementById('username')?.value;
+        const password = document.getElementById('password')?.value;
 
-      try {
-        const { response, result } = await makeApiRequest('/api/login', {
-          method: 'POST',
-          body: JSON.stringify({ username, password }),
-        });
+        if (!username || !password) {
+          errorMessage.textContent = 'Username and password are required';
+          errorMessage.style.display = 'block';
+          return;
+        }
 
-        if (response.ok) {
-          console.log('Login successful:', result);
-          window.location.href = result.redirect || '/dashboard.html';
-        } else {
-          errorMessage.textContent = result.message || 'Login failed';
+        try {
+          const { response, result } = await makeApiRequest('/api/login', {
+            method: 'POST',
+            body: JSON.stringify({ username, password }),
+          });
+
+          if (response.ok) {
+            console.log('Login successful:', result);
+            window.location.href = result.redirect || '/dashboard.html';
+          } else {
+            errorMessage.textContent = result.message || 'Login failed';
+            errorMessage.style.display = 'block';
+          }
+        } catch (error) {
+          errorMessage.textContent = 'An error occurred. Please try again.';
           errorMessage.style.display = 'block';
         }
-      } catch (error) {
-        errorMessage.textContent = 'An error occurred. Please try again.';
-        errorMessage.style.display = 'block';
-      }
-    });
-  }
+      });
+    }
 
-  // Create Account Form Submission
-  if (createForm) {
-    createForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      resetMessages([errorMessage, createMessage]);
+    // Create Account Form Submission
+    if (createForm) {
+      createForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        console.log('Create account form submitted');
+        resetMessages([errorMessage, createMessage]);
 
-      const username = document.getElementById('createUsername')?.value;
-      const firstName = document.getElementById('createFirstName')?.value;
-      const lastName = document.getElementById('createLastName')?.value;
-      const email = document.getElementById('createEmail')?.value;
-      const password = document.getElementById('createPassword')?.value;
+        const username = document.getElementById('createUsername')?.value;
+        const firstName = document.getElementById('createFirstName')?.value;
+        const lastName = document.getElementById('createLastName')?.value;
+        const email = document.getElementById('createEmail')?.value;
+        const password = document.getElementById('createPassword')?.value;
 
-      if (!username || !firstName || !lastName || !email || !password) {
-        createMessage.textContent = 'All fields are required';
-        createMessage.style.color = 'red';
-        createMessage.style.display = 'block';
-        return;
-      }
-
-      try {
-        const { response, result } = await makeApiRequest('/api/create', {
-          method: 'POST',
-          body: JSON.stringify({ username, firstName, lastName, email, password }),
-        });
-
-        if (response.ok) {
-          createMessage.textContent = 'Account created successfully! Please log in.';
+        if (!username || !firstName || !lastName || !email || !password) {
+          createMessage.textContent = 'All fields are required';
+          createMessage.style.color = 'red';
           createMessage.style.display = 'block';
-          createForm.reset();
-        } else {
-          createMessage.textContent = result.message || 'Account creation failed';
+          return;
+        }
+
+        try {
+          const { response, result } = await makeApiRequest('/api/create', {
+            method: 'POST',
+            body: JSON.stringify({ username, firstName, lastName, email, password }),
+          });
+
+          if (response.ok) {
+            createMessage.textContent = 'Account created successfully! Please log in.';
+            createMessage.style.display = 'block';
+            createForm.reset();
+          } else {
+            createMessage.textContent = result.message || 'Account creation failed';
+            createMessage.style.color = 'red';
+            createMessage.style.display = 'block';
+          }
+        } catch (error) {
+          createMessage.textContent = 'An error occurred. Please try again.';
           createMessage.style.color = 'red';
           createMessage.style.display = 'block';
         }
-      } catch (error) {
-        createMessage.textContent = 'An error occurred. Please try again.';
-        createMessage.style.color = 'red';
-        createMessage.style.display = 'block';
-      }
-    });
+      });
+    }
+  } catch (error) {
+    console.error('Error in client.js initialization:', error);
   }
 });

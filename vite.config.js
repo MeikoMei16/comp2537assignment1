@@ -7,7 +7,7 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: process.env.VITE_API_URL || 'http://localhost:3000', // Use env variable or fallback to local
+        target: 'http://localhost:10000',
         changeOrigin: true,
         secure: false,
       },
@@ -22,9 +22,5 @@ export default defineConfig({
         errorpage: resolve(__dirname, '404.html'),
       },
     },
-  },
-  define: {
-    // Make VITE_API_URL available in client-side code
-    'import.meta.env.VITE_API_URL': JSON.stringify(process.env.VITE_API_URL || 'http://localhost:3000'),
   },
 });
