@@ -49,27 +49,35 @@ const postSchema = new mongoose.Schema({
 const Post = mongoose.model('Post', postSchema);
 
 const isAuthenticated = (req, res, next) => {
+  console.log('Checking authentication for:', req.url);
   if (req.session.user) {
     next();
   } else {
     res.status(401).json({ message: 'Not authenticated', authenticated: false });
+    res.end();
   }
 };
+
+// Log all incoming requests
+app.use((req, res, next) => {
+  console.log(`Processing request: ${req.method} ${req.url}`);
+  next();
+});
 
 // Start the server with DB connection
 (async () => {
   await initializeDatabase();
 
-// Updated CORS configuration to allow deployed frontend or local development
+  // Updated CORS configuration
   const allowedOrigins = [
     'http://localhost:5173', // Local development
     process.env.FRONTEND_URL || 'https://comp2537assignment1-syhl.onrender.com',
-  ].filter(Boolean); // Remove undefined values
+  ].filter(Boolean);
 
   app.use(
       cors({
         origin: (origin, callback) => {
-          // Allow requests with no origin (e.g., mobile apps or curl) or allowed origins
+          console.log('CORS check - Origin:', origin, 'Allowed:', allowedOrigins);
           if (!origin || allowedOrigins.includes(origin)) {
             callback(null, true);
           } else {
@@ -86,6 +94,8 @@ const isAuthenticated = (req, res, next) => {
 
   app.use(express.json());
   app.use(cookieParser());
+
+  // Session configuration with error logging
   const sessionStore = MongoStore.create({
     mongoUrl: process.env.MONGO_URI,
     collectionName: 'sessions',
@@ -94,35 +104,53 @@ const isAuthenticated = (req, res, next) => {
     console.error('Session store error:', error);
   });
 
-  app.use(session({
-    secret: process.env.SESSION_SECRET,
-    resave: false,
-    saveUninitialized: false,
-    // store: sessionStore,
-    cookie: {
-      secure: process.env.NODE_ENV === 'production',
-      httpOnly: true,
-      maxAge: 60 * 60 * 1000,
-    },
-  }));
+  app.use(
+      session({
+        secret: process.env.SESSION_SECRET,
+        resave: false,
+        saveUninitialized: false,
+        store: sessionStore,
+        cookie: {
+          secure: process.env.NODE_ENV === 'production',
+          httpOnly: true,
+          maxAge: 60 * 60 * 1000,
+        },
+      })
+  );
+
+  // Log response completion
+  app.use((req, res, next) => {
+    const originalEnd = res.end;
+    res.end = function (...args) {
+      console.log(`Response sent for ${req.method} ${req.url}: Status ${res.statusCode}`);
+      return originalEnd.apply(this, args);
+    };
+    next();
+  });
 
   // Session check endpoint
   app.get('/api/check-session', isAuthenticated, (req, res) => {
+    console.log('Handling /api/check-session for user:', req.session.user.username);
     res.status(200).json({
       message: 'Session is valid',
       authenticated: true,
       username: req.session.user.username,
       ID: req.session.user.ID,
     });
+    res.end();
   });
 
   // Test DB connection endpoint
   app.get('/api/test-db', async (req, res) => {
+    console.log('Handling /api/test-db');
     try {
       await mongoose.connection.db.admin().ping();
       res.status(200).json({ message: 'MongoDB connection is working' });
+      res.end();
     } catch (error) {
+      console.error('MongoDB ping error:', error.message);
       res.status(500).json({ message: 'MongoDB connection failed', error: error.message });
+      res.end();
     }
   });
 
@@ -132,7 +160,8 @@ const isAuthenticated = (req, res, next) => {
     const { username, password } = req.body;
     if (!username || !password) {
       console.log('Missing username or password');
-      return res.status(400).json({ message: 'Username and password are required' });
+      res.status(400).json({ message: 'Username and password are required' });
+      return res.end();
     }
     try {
       console.log('Querying user:', username);
@@ -141,36 +170,29 @@ const isAuthenticated = (req, res, next) => {
       if (user && await bcrypt.compare(password, user.password)) {
         console.log('Password matched, setting session for:', username);
         req.session.user = { username: user.user_name, ID: user._id.toString() };
-        // Ensure session is saved before sending response
-        req.session.save((err) => {
-          if (err) {
-            console.error('Session save error:', err);
-            return res.status(500).json({ message: 'Failed to save session' });
-          }
-          console.log('Session saved, sending 200 response for:', username);
-          res.status(200).json({ message: 'Login successful', redirect: '/dashboard.html' });
-        });
+        console.log('Sending 200 response for:', username);
+        res.status(200).json({ message: 'Login successful', redirect: '/dashboard.html' });
+        res.end();
       } else {
         console.log('Invalid credentials for:', username);
         res.status(401).json({ message: 'Invalid username or password' });
+        res.end();
       }
     } catch (error) {
       console.error('Error in /api/login:', error.message);
       res.status(500).json({ message: 'Server error during login' });
+      res.end();
     }
-  });
-
-// Catch-all error middleware
-  app.use((err, req, res, next) => {
-    console.error('Unhandled server error:', err.message);
-    res.status(500).json({ message: 'Internal server error' });
   });
 
   // Create Account Endpoint
   app.post('/api/create', async (req, res) => {
+    console.log('Received POST /api/create:', req.body);
     const { username, firstName, lastName, email, password } = req.body;
     if (!username || !firstName || !lastName || !email || !password) {
-      return res.status(400).json({ message: 'All fields are required' });
+      console.log('Missing required fields');
+      res.status(400).json({ message: 'All fields are required' });
+      return res.end();
     }
     try {
       const hashedPassword = await bcrypt.hash(password, 12);
@@ -182,7 +204,9 @@ const isAuthenticated = (req, res, next) => {
         password: hashedPassword,
       });
       await newUser.save();
+      console.log('User created:', username);
       res.status(201).json({ message: 'User created successfully' });
+      res.end();
     } catch (error) {
       console.error('Error creating user:', error);
       if (error.code === 11000) {
@@ -196,21 +220,23 @@ const isAuthenticated = (req, res, next) => {
       } else {
         res.status(500).json({ message: 'Server error during user creation' });
       }
+      res.end();
     }
   });
 
   // Create Post Endpoint
   app.post('/api/create-post', isAuthenticated, async (req, res) => {
+    console.log('Received POST /api/create-post:', req.body);
     const { post_text } = req.body;
     if (!post_text || post_text.length > 100) {
-      return res.status(400).json({ message: 'Post text is required and must be 100 characters or less' });
+      console.log('Invalid post text');
+      res.status(400).json({ message: 'Post text is required and must be 100 characters or less' });
+      return res.end();
     }
-
     try {
       const user_id = req.session.user.ID;
       const date = new Date().toISOString().split('T')[0];
       const view = Math.floor(Math.random() * 1000);
-
       const newPost = new Post({
         user_id,
         date,
@@ -218,53 +244,71 @@ const isAuthenticated = (req, res, next) => {
         view,
       });
       const result = await newPost.save();
+      console.log('Post created for user:', req.session.user.username);
       res.status(201).json({ message: 'Post created successfully', post_id: result._id });
+      res.end();
     } catch (error) {
       console.error('Error creating post:', error);
       res.status(500).json({ message: 'Server error during post creation' });
+      res.end();
     }
   });
 
   // Signout Endpoint
   app.post('/api/signout', (req, res) => {
+    console.log('Received POST /api/signout');
     req.session.destroy((err) => {
       if (err) {
-        return res.status(500).json({ message: 'Error signing out' });
+        console.error('Error signing out:', err);
+        res.status(500).json({ message: 'Error signing out' });
+        return res.end();
       }
       res.clearCookie('connect.sid');
+      console.log('Session destroyed, sending 200 response');
       res.status(200).json({ message: 'Signed out successfully', redirect: '/index.html' });
+      res.end();
     });
   });
 
-
-
   app.use(express.static(join(__dirname, 'dist')));
 
-
-
   app.get('', (req, res) => {
+    console.log('Serving /');
     res.sendFile(join(__dirname, 'dist', 'index.html'));
+    res.end();
   });
-  app.get('/',  (req, res) => {
+  app.get('/', (req, res) => {
+    console.log('Serving /');
     res.sendFile(join(__dirname, 'dist', 'index.html'));
+    res.end();
   });
 
   app.get('/dashboard.html', isAuthenticated, (req, res) => {
+    console.log('Serving /dashboard.html for user:', req.session.user.username);
     res.sendFile(join(__dirname, 'dist', 'dashboard.html'));
+    res.end();
   });
 
   app.get('/index.html', (req, res) => {
+    console.log('Serving /index.html');
     res.sendFile(join(__dirname, 'dist', 'index.html'));
+    res.end();
   });
 
   app.get('*', (req, res) => {
+    console.log('Serving 404 for:', req.url);
     res.status(404).sendFile(join(__dirname, 'dist', '404.html'));
+    res.end();
   });
 
+  // Catch-all error middleware
+  app.use((err, req, res, next) => {
+    console.error('Unhandled server error:', err.message);
+    res.status(500).json({ message: 'Internal server error' });
+    res.end();
+  });
 
-
-  app.listen(port,"0.0.0.0", () => {
+  app.listen(port, "0.0.0.0", () => {
     console.log(`Server running at http://localhost:${port}`);
   });
 })();
-
